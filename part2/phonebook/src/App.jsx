@@ -4,7 +4,8 @@ import PersonForm from './components/PersonForm';
 import Persons from './components/Persons';
 import axios from "axios";
 import phoneService from "./services/phone"
-import phone from './services/phone';
+import Notification from './components/Notification';
+import "./index.css"
 
 
 
@@ -15,6 +16,8 @@ function App() {
   const [newPhoneNumber, setNewPhoneNumber] = useState('');
   const [filter, setFilter] = useState(false);
   const [filterName, setFilterName] = useState('');
+  const [notification, setNotification] = useState(null);
+  const [notificationClass, setNotificationClass] = useState("ok");
 
   useEffect(() =>
   {
@@ -41,13 +44,26 @@ function App() {
       phoneService.replacePhone(id, newPerson)
       .then((data) => {
         setPersons(persons.map(person => person.id == id ? data : person));
+        setNotification(`${existingPerson.name} number was changed to a new number`);
+        setNotificationClass("ok");
       })
+      setTimeout(() => setNotification(null), 5000);
+
     }
     else 
     { 
       phoneService.
       create(newPerson).
-      then(data => setPersons(persons.concat(data)));
+      then(data => {
+        setPersons(persons.concat(data))
+        setNotification(`Added ${data.name}`);
+        setNotificationClass("ok");
+      });
+      setTimeout(() =>
+      {
+        setNotification(null);
+      }, 4000)
+      
     }
     setNewName('');
     setNewPhoneNumber('');
@@ -75,7 +91,14 @@ function App() {
     {
       phoneService.
       deletePhone(id).
-      then(data => setPersons(persons.filter(person => person.id !== id)));
+      then(data => setPersons(persons.filter(person => person.id !== id)))
+      .catch((error) =>
+      {
+        const person = persons.find(person => person.id === id);
+        setNotification(`Information of ${person.name} has already been removed from server`);
+        setNotificationClass("error");
+        setTimeout(() => setNotification(null), 5000);
+      })
     }
     
   }
@@ -83,6 +106,7 @@ function App() {
   return (
     <div>
       <h2>Phonebook</h2>
+      <Notification message={notification} classColor={notificationClass}/>
      <Filter handleFilter={handleFilter} filterName={filterName}/>
       <h3>Add a new phone</h3>
       <PersonForm addNewPerson={addNewPerson} newName={newName} newPhoneNumber={newPhoneNumber} handleNameInput={handleNameInput} handlePhoneNumberInput={handlePhoneNumberInput}/>
